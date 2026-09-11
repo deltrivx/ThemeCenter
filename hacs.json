@@ -1,0 +1,6 @@
+{
+  "name": "Theme Center",
+  "render_readme": true,
+  "filename": "dist/theme-center.js",
+  "homeassistant": "2024.1.0"
+}
