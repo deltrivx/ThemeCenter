@@ -4433,6 +4433,224 @@ class SmartHome3DDashboard extends HTMLElement {
           }
         }
 
+      
+        /* === 主题卡片与设置中心自适应排版优化 (移动端/桌面端完美适配) === */
+        .theme-cards-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          width: 100%;
+        }
+
+        .theme-box {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 14px;
+          padding: 14px 18px;
+          transition: all 0.25s ease;
+          box-sizing: border-box;
+          gap: 14px;
+        }
+
+        .theme-box:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .theme-box.active {
+          background: rgba(0, 229, 255, 0.06);
+          border-color: rgba(0, 229, 255, 0.35);
+          box-shadow: 0 4px 20px rgba(0, 229, 255, 0.08);
+        }
+
+        .theme-box-main {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .theme-box-indicator {
+          font-size: 14px;
+          color: #00e5ff;
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+
+        .theme-box-indicator.inactive {
+          color: #64748b;
+        }
+
+        .theme-box-text {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .theme-box-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .theme-box-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #f8fafc;
+        }
+
+        .theme-status-pill {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 12px;
+          background: rgba(0, 229, 255, 0.15);
+          color: #00e5ff;
+          border: 1px solid rgba(0, 229, 255, 0.3);
+          white-space: nowrap;
+        }
+
+        .theme-box-desc {
+          font-size: 12px;
+          color: #94a3b8;
+          line-height: 1.4;
+        }
+
+        .theme-box-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .theme-action-btn {
+          padding: 7px 14px;
+          border-radius: 9px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+          border: 1px solid transparent;
+        }
+
+        .theme-action-btn.primary {
+          background: rgba(0, 229, 255, 0.12);
+          border-color: rgba(0, 229, 255, 0.35);
+          color: #00e5ff;
+        }
+
+        .theme-action-btn.primary:hover:not(:disabled) {
+          background: rgba(0, 229, 255, 0.25);
+          border-color: #00e5ff;
+        }
+
+        .theme-action-btn.primary.highlight {
+          background: linear-gradient(135deg, rgba(255, 170, 51, 0.2), rgba(255, 120, 0, 0.2));
+          border-color: rgba(255, 170, 51, 0.45);
+          color: #ffaa33;
+        }
+
+        .theme-action-btn.primary.highlight:hover {
+          background: linear-gradient(135deg, rgba(255, 170, 51, 0.35), rgba(255, 120, 0, 0.35));
+          border-color: #ffaa33;
+        }
+
+        .theme-action-btn.secondary {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.12);
+          color: #cbd5e1;
+        }
+
+        .theme-action-btn.secondary:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #fff;
+        }
+
+        .theme-action-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        /* 版本与检测更新按钮美化 */
+        .sys-version-box {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .theme-mini-btn {
+          background: rgba(0, 229, 255, 0.1);
+          border: 1px solid rgba(0, 229, 255, 0.3);
+          color: #00e5ff;
+          padding: 3px 10px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .theme-mini-btn:hover {
+          background: rgba(0, 229, 255, 0.2);
+          border-color: #00e5ff;
+        }
+
+        .sys-update-banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(0, 229, 255, 0.08);
+          border: 1px solid rgba(0, 229, 255, 0.25);
+          border-radius: 10px;
+          padding: 10px 14px;
+          margin-top: 8px;
+          margin-bottom: 8px;
+          font-size: 13px;
+          color: #e2e8f0;
+          animation: fadeIn 0.3s ease;
+        }
+
+        /* 移动端 (手机/小屏竖屏) 专属排版响应式优化 */
+        @media (max-width: 680px) {
+          .theme-box {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px;
+            gap: 12px;
+          }
+
+          .theme-box-actions {
+            justify-content: flex-end;
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 10px;
+          }
+
+          .theme-action-btn {
+            flex: 1;
+            text-align: center;
+            padding: 8px 10px;
+          }
+
+          .sys-version-box {
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+          }
+        }
+
       </style>
 
       <div class="main-shell">
@@ -4957,73 +5175,81 @@ class SmartHome3DDashboard extends HTMLElement {
                     <div class="settings-icon-wrap" style="color: #ffaa33; background: rgba(255, 170, 51, 0.15);">🎨</div>
                     <div>
                       <div class="settings-card-title">主题与默认启动管理</div>
-                      <div class="settings-card-desc">自由切换当前视图，或设定每次进入 Home Assistant 时的默认启动主题</div>
+                      <div class="settings-card-desc">自由切换当前显示主题，或设定每次进入 HA 的默认启动模式</div>
                     </div>
                   </div>
                 </div>
                 <div class="settings-card-body">
-                  <div class="theme-options-list">
-                    <div class="theme-option-item active">
-                      <div class="theme-opt-left">
-                        <div class="theme-opt-radio">●</div>
-                        <div>
-                          <div class="theme-opt-title">3D 智能中控主题 (当前运行)</div>
-                          <div class="theme-opt-desc">黑曜石磨砂玻璃质感 · 3D 户型立体投影 · 紧凑设备集控</div>
+                  <div class="theme-cards-wrapper">
+                    
+                    <!-- 3D 智能中控卡片 -->
+                    <div class="theme-box active">
+                      <div class="theme-box-main">
+                        <div class="theme-box-indicator">●</div>
+                        <div class="theme-box-text">
+                          <div class="theme-box-title-row">
+                            <span class="theme-box-title">3D 智能中控主题</span>
+                            <span class="theme-status-pill cur-active" id="badge-default-3d">当前运行</span>
+                          </div>
+                          <div class="theme-box-desc">次世代黑曜石毛玻璃 · 3D 立体空间映射 · 全屋设备集控</div>
                         </div>
                       </div>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="settings-btn-action" id="btn-set-default-3d" type="button" style="background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff;">设为默认</button>
-                        <span class="theme-badge-cur" id="badge-default-3d">当前生效</span>
+                      <div class="theme-box-actions">
+                        <button class="theme-action-btn primary" id="btn-set-default-3d" type="button">设为默认</button>
                       </div>
                     </div>
 
-                    <div class="theme-option-item" id="btn-switch-to-native-theme">
-                      <div class="theme-opt-left">
-                        <div class="theme-opt-radio">○</div>
-                        <div>
-                          <div class="theme-opt-title">官方原生经典主题 (完全还原)</div>
-                          <div class="theme-opt-desc">Home Assistant 官方卡片布局 · 原生顶栏与侧边栏 · 官方原生设置菜单</div>
+                    <!-- 原生经典主题卡片 -->
+                    <div class="theme-box">
+                      <div class="theme-box-main">
+                        <div class="theme-box-indicator inactive">○</div>
+                        <div class="theme-box-text">
+                          <div class="theme-box-title-row">
+                            <span class="theme-box-title">官方原生经典主题</span>
+                          </div>
+                          <div class="theme-box-desc">Home Assistant 官方卡片布局 · 原生顶栏与侧边栏导航</div>
                         </div>
                       </div>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <button class="settings-btn-action" id="btn-set-default-native" type="button">设为默认</button>
-                        <button class="settings-btn-action" id="btn-trigger-switch-native" type="button">切换至原生</button>
+                      <div class="theme-box-actions">
+                        <button class="theme-action-btn secondary" id="btn-set-default-native" type="button">设为默认</button>
+                        <button class="theme-action-btn primary highlight" id="btn-trigger-switch-native" type="button">切换至原生</button>
                       </div>
                     </div>
+
                   </div>
                 </div>
               </div>
 
-              <!-- 2. 系统底座与运行状态卡片 (后期扩展功能占位) -->
+              <!-- 2. 系统底座与运行状态卡片 (系统信息与版本更新) -->
               <div class="settings-card">
                 <div class="settings-card-head">
                   <div class="settings-head-left">
                     <div class="settings-icon-wrap" style="color: #00bcd4; background: rgba(0, 188, 212, 0.15);">⚡</div>
                     <div>
                       <div class="settings-card-title">系统底座与连接</div>
-                      <div class="settings-card-desc">Home Assistant Core · Docker 容器运行链路与硬件通信</div>
+                      <div class="settings-card-desc">ThemeCenter 核心套件 · 容器运行链路与硬件通信</div>
                     </div>
                   </div>
                 </div>
                 <div class="settings-card-body">
                   <div class="sys-info-row">
                     <span class="sys-info-lbl">Home Assistant 版本</span>
-                    <span class="sys-info-val" id="sys-info-ha-version">${(this._hass && this._hass.config && this._hass.config.version) || "未知"}</span>
+                    <span class="sys-info-val" id="sys-info-ha-version">${(this._hass && this._hass.config && this._hass.config.version) || "Core 2026.9"}</span>
                   </div>
-                  <div class="sys-info-row" style="align-items: center;">
-                    <span class="sys-info-lbl">主题版本</span>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <span class="sys-info-val" id="sys-info-theme-version">${THEME_NAME} v${THEME_VERSION}</span>
-                      <button class="settings-btn-action" id="btn-check-theme-update" type="button" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">🔄 检测更新</button>
+                  <div class="sys-info-row update-version-row">
+                    <span class="sys-info-lbl">主题套件版本</span>
+                    <div class="sys-version-box">
+                      <span class="sys-info-val theme-ver-val" id="sys-info-theme-version">ThemeCenter v1.0.0</span>
+                      <button class="theme-mini-btn" id="btn-check-theme-update" type="button" title="点击检查 GitHub 最新版本">🔄 检测更新</button>
                     </div>
                   </div>
-                  <div class="sys-info-row" id="row-update-status" style="display: none;">
-                    <span class="sys-info-lbl">更新状态</span>
-                    <span class="sys-info-val" id="val-update-status" style="color: #00e5ff;">正在检查 GitHub Release...</span>
+                  <div class="sys-update-banner" id="row-update-status" style="display: none;">
+                    <div class="update-banner-icon">ℹ️</div>
+                    <div class="update-banner-text" id="val-update-status">正在检查最新版本...</div>
                   </div>
                   <div class="sys-info-row">
-                    <span class="sys-info-lbl">网络通信</span>
-                    <span class="sys-info-val">192.168.31.2 直连 · 零延迟 WebSockets</span>
+                    <span class="sys-info-lbl">网络通信链路</span>
+                    <span class="sys-info-val">[IP] 直连 · WebSocket 零延迟</span>
                   </div>
                   <div class="sys-info-row">
                     <span class="sys-info-lbl">AI 语音管线</span>
