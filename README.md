@@ -9,6 +9,8 @@
 
 面向 Home Assistant 的通用次世代 3D / 液态毛玻璃智能中控主题与自动化卡片生成脚手架。提供高质感 3D 户型可视化、流体环境光晕、物理态交互卡片以及**基于设备实体一键生成专属仪表盘**的智能脚手架。
 
+![Theme Center 3D PC 预览](assets/pc-preview.png)
+
 > 当前正式版：**v1.0.0** · 兼容系统：**Home Assistant 2024.1+**（Core / Container / OS）
 
 ---
