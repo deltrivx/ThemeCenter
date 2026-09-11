@@ -69,7 +69,7 @@ class SmartHome3DDashboard extends HTMLElement {
     };
     updateDefaultBadges();
 
-    // 全局悬浮 Toast 通知机制 (专用于主题设置与全局状态)
+    // 页面中心毛玻璃 Modal Toast 提示
     const showToast = (text, icon = "✓", type = "info") => {
       let toast = this.shadowRoot.getElementById("theme-center-toast");
       if (!toast) {
@@ -79,13 +79,41 @@ class SmartHome3DDashboard extends HTMLElement {
         this.shadowRoot.appendChild(toast);
       }
       toast.className = "theme-center-toast " + type;
-      toast.innerHTML = `<span style="font-size:16px;">${icon}</span><span>${text}</span>`;
+      toast.innerHTML = `<div style="font-size:32px;line-height:1;margin-bottom:2px;">${icon}</div><div style="font-size:14.5px;color:#f8fafc;letter-spacing:0.3px;">${text}</div>`;
       toast.classList.add("show");
       if (this._toastTimer) clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => {
         toast.classList.remove("show");
-      }, 3500);
+      }, 2500);
     };
+
+    // 动态探查并更新 AI 语音管线与 Conversation 模型
+    const updateAIPipelineInfo = () => {
+      const el = this.shadowRoot.getElementById("sys-info-ai-pipeline");
+      if (!el || !this._hass) return;
+      
+      const states = this._hass.states || {};
+      let convName = "";
+      
+      // 1. 优先从 conversation.* 状态中探测
+      for (const [eid, s] of Object.entries(states)) {
+        if (eid.startsWith("conversation.")) {
+          convName = s.attributes?.friendly_name || eid.replace("conversation.", "").toUpperCase();
+          break;
+        }
+      }
+      
+      // 2. 检测是否具备 Cloudflare AI Gateway
+      const hasCF = Object.keys(states).some(k => k.includes("cloudflare_ai_gateway"));
+      
+      if (convName) {
+        el.textContent = hasCF ? `Cloudflare Gateway (${convName})` : convName;
+      } else {
+        el.textContent = hasCF ? "Cloudflare AI Gateway (GLM-4.7-Flash)" : "Home Assistant 本地管线";
+      }
+    };
+    setTimeout(updateAIPipelineInfo, 100);
+    setTimeout(updateAIPipelineInfo, 1000);
 
     const btnSetDef3D = this.shadowRoot.getElementById("btn-set-default-3d");
     if (btnSetDef3D) {
@@ -4987,31 +5015,36 @@ class SmartHome3DDashboard extends HTMLElement {
         /* 顶部悬浮 Toast 交互通知 (用于主题切换、默认设置等操作提示) */
         .theme-center-toast {
           position: fixed !important;
-          top: 24px !important;
+          top: 50% !important;
           left: 50% !important;
-          transform: translateX(-50%) translateY(-20px) scale(0.95) !important;
-          background: rgba(15, 23, 42, 0.92) !important;
-          backdrop-filter: blur(20px) !important;
-          -webkit-backdrop-filter: blur(20px) !important;
-          border: 1px solid rgba(0, 229, 255, 0.35) !important;
-          border-radius: 30px !important;
-          padding: 10px 22px !important;
+          transform: translate(-50%, -50%) scale(0.85) !important;
+          background: rgba(15, 23, 42, 0.95) !important;
+          backdrop-filter: blur(28px) !important;
+          -webkit-backdrop-filter: blur(28px) !important;
+          border: 1px solid rgba(0, 229, 255, 0.4) !important;
+          border-radius: 18px !important;
+          padding: 18px 28px !important;
           color: #f8fafc !important;
-          font-size: 13.5px !important;
+          font-size: 15px !important;
           font-weight: 600 !important;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 255, 0.2) !important;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(0, 229, 255, 0.25) !important;
           z-index: 99999 !important;
           opacity: 0 !important;
           pointer-events: none !important;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
           display: flex !important;
+          flex-direction: column !important;
           align-items: center !important;
-          gap: 10px !important;
-          white-space: nowrap !important;
+          justify-content: center !important;
+          gap: 12px !important;
+          min-width: 200px !important;
+          max-width: 85vw !important;
+          text-align: center !important;
+          box-sizing: border-box !important;
         }
         .theme-center-toast.show {
           opacity: 1 !important;
-          transform: translateX(-50%) translateY(0) scale(1) !important;
+          transform: translate(-50%, -50%) scale(1) !important;
           pointer-events: auto !important;
         }
         .theme-center-toast.success {
@@ -5131,31 +5164,36 @@ class SmartHome3DDashboard extends HTMLElement {
         /* 顶部悬浮 Toast 交互通知 (用于主题切换、默认设置等操作提示) */
         .theme-center-toast {
           position: fixed !important;
-          top: 24px !important;
+          top: 50% !important;
           left: 50% !important;
-          transform: translateX(-50%) translateY(-20px) scale(0.95) !important;
-          background: rgba(15, 23, 42, 0.92) !important;
-          backdrop-filter: blur(20px) !important;
-          -webkit-backdrop-filter: blur(20px) !important;
-          border: 1px solid rgba(0, 229, 255, 0.35) !important;
-          border-radius: 30px !important;
-          padding: 10px 22px !important;
+          transform: translate(-50%, -50%) scale(0.85) !important;
+          background: rgba(15, 23, 42, 0.95) !important;
+          backdrop-filter: blur(28px) !important;
+          -webkit-backdrop-filter: blur(28px) !important;
+          border: 1px solid rgba(0, 229, 255, 0.4) !important;
+          border-radius: 18px !important;
+          padding: 18px 28px !important;
           color: #f8fafc !important;
-          font-size: 13.5px !important;
+          font-size: 15px !important;
           font-weight: 600 !important;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 255, 0.2) !important;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(0, 229, 255, 0.25) !important;
           z-index: 99999 !important;
           opacity: 0 !important;
           pointer-events: none !important;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
           display: flex !important;
+          flex-direction: column !important;
           align-items: center !important;
-          gap: 10px !important;
-          white-space: nowrap !important;
+          justify-content: center !important;
+          gap: 12px !important;
+          min-width: 200px !important;
+          max-width: 85vw !important;
+          text-align: center !important;
+          box-sizing: border-box !important;
         }
         .theme-center-toast.show {
           opacity: 1 !important;
-          transform: translateX(-50%) translateY(0) scale(1) !important;
+          transform: translate(-50%, -50%) scale(1) !important;
           pointer-events: auto !important;
         }
         .theme-center-toast.success {
@@ -5841,7 +5879,7 @@ class SmartHome3DDashboard extends HTMLElement {
                   </div>
                   <div class="sys-info-row">
                     <span class="sys-info-lbl">AI 语音管线</span>
-                    <span class="sys-info-val">Cloudflare AI Gateway (DeepSeek-V4-Flash)</span>
+                    <span class="sys-info-val" id="sys-info-ai-pipeline">检测中...</span>
                   </div>
                 </div>
               </div>
