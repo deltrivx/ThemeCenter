@@ -71,19 +71,55 @@ class SmartHome3DDashboard extends HTMLElement {
 
     const btnSetDef3D = this.shadowRoot.getElementById("btn-set-default-3d");
     if (btnSetDef3D) {
-      btnSetDef3D.addEventListener("click", () => {
+      btnSetDef3D.addEventListener("click", async () => {
         localStorage.setItem("theme_center_default_theme", "3d");
         localStorage.setItem("defaultPanel", JSON.stringify("smart-3d"));
         updateDefaultBadges();
+        try {
+          const ha = document.querySelector("home-assistant");
+          if (ha && ha.hass && ha.hass.callWS) {
+            await ha.hass.callWS({
+              type: "frontend/set_user_data",
+              key: "core",
+              value: { default_panel: "smart-3d" }
+            });
+          }
+        } catch(e) {}
+        const rowStatus = this.shadowRoot.getElementById("row-update-status");
+        const valStatus = this.shadowRoot.getElementById("val-update-status");
+        if (rowStatus && valStatus) {
+          rowStatus.style.display = "flex";
+          valStatus.textContent = "已成功设置【3D智能中控】为默认启动主题！下次进入将直接呈现中控。";
+          valStatus.style.color = "#00e5ff";
+          setTimeout(() => { rowStatus.style.display = "none"; }, 4000);
+        }
       });
     }
 
     const btnSetDefNat = this.shadowRoot.getElementById("btn-set-default-native");
     if (btnSetDefNat) {
-      btnSetDefNat.addEventListener("click", () => {
+      btnSetDefNat.addEventListener("click", async () => {
         localStorage.setItem("theme_center_default_theme", "native");
         localStorage.setItem("defaultPanel", JSON.stringify("lovelace"));
         updateDefaultBadges();
+        try {
+          const ha = document.querySelector("home-assistant");
+          if (ha && ha.hass && ha.hass.callWS) {
+            await ha.hass.callWS({
+              type: "frontend/set_user_data",
+              key: "core",
+              value: { default_panel: "home" }
+            });
+          }
+        } catch(e) {}
+        const rowStatus = this.shadowRoot.getElementById("row-update-status");
+        const valStatus = this.shadowRoot.getElementById("val-update-status");
+        if (rowStatus && valStatus) {
+          rowStatus.style.display = "flex";
+          valStatus.textContent = "已成功设置【官方原生经典主题】为默认启动主题！下次进入将直接打开原生概览。";
+          valStatus.style.color = "#00e676";
+          setTimeout(() => { rowStatus.style.display = "none"; }, 4000);
+        }
       });
     }
 
@@ -4978,6 +5014,138 @@ class SmartHome3DDashboard extends HTMLElement {
             flex-wrap: wrap !important;
             justify-content: flex-end !important;
             gap: 8px !important;
+          }
+        }
+
+      
+        /* === 系统底座卡片文字防贴边与视觉呼吸感重构 === */
+        #tab-view-settings .settings-card-body {
+          padding: 4px 6px !important;
+        }
+
+        #tab-view-settings .sys-info-row {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          padding: 12px 14px !important;
+          margin: 6px 0 !important;
+          background: rgba(255, 255, 255, 0.02) !important;
+          border: 1px solid rgba(255, 255, 255, 0.04) !important;
+          border-radius: 12px !important;
+          gap: 16px !important;
+          box-sizing: border-box !important;
+        }
+
+        #tab-view-settings .sys-info-row:hover {
+          background: rgba(255, 255, 255, 0.035) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #tab-view-settings .sys-info-lbl {
+          font-size: 13px !important;
+          color: #94a3b8 !important;
+          font-weight: 500 !important;
+          flex-shrink: 0 !important;
+        }
+
+        #tab-view-settings .sys-info-val {
+          font-size: 13px !important;
+          color: #f1f5f9 !important;
+          font-weight: 600 !important;
+          text-align: right !important;
+          word-break: break-all !important;
+        }
+
+        .sys-version-box {
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+        }
+
+        .sys-update-banner {
+          display: flex !important;
+          align-items: center !important;
+          gap: 12px !important;
+          background: rgba(0, 229, 255, 0.08) !important;
+          border: 1px solid rgba(0, 229, 255, 0.3) !important;
+          border-radius: 12px !important;
+          padding: 12px 16px !important;
+          margin: 10px 4px !important;
+          font-size: 13px !important;
+          color: #e2e8f0 !important;
+          box-shadow: 0 4px 16px rgba(0, 229, 255, 0.06) !important;
+        }
+
+        @media (max-width: 768px) {
+          #tab-view-settings .settings-card-body {
+            padding: 0 !important;
+          }
+          #tab-view-settings .sys-info-row {
+            padding: 11px 12px !important;
+            margin: 5px 0 !important;
+          }
+        }
+
+      
+        /* === 系统设置卡片内部边距与文字贴边彻底优化 === */
+        #tab-view-settings .settings-card {
+          padding: 24px 24px !important;
+          overflow: hidden !important;
+        }
+
+        #tab-view-settings .settings-card-body {
+          padding: 0 4px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 10px !important;
+        }
+
+        #tab-view-settings .sys-info-row {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          padding: 14px 18px !important;
+          margin: 0 !important;
+          background: rgba(255, 255, 255, 0.025) !important;
+          border: 1px solid rgba(255, 255, 255, 0.05) !important;
+          border-radius: 12px !important;
+          gap: 16px !important;
+          box-sizing: border-box !important;
+          width: 100% !important;
+        }
+
+        #tab-view-settings .sys-info-lbl {
+          font-size: 13.5px !important;
+          color: #94a3b8 !important;
+          font-weight: 500 !important;
+          padding-left: 2px !important;
+          white-space: nowrap !important;
+        }
+
+        #tab-view-settings .sys-info-val {
+          font-size: 13.5px !important;
+          color: #f1f5f9 !important;
+          font-weight: 600 !important;
+          text-align: right !important;
+          padding-right: 2px !important;
+          word-break: break-all !important;
+        }
+
+        @media (max-width: 768px) {
+          #tab-view-settings .settings-card {
+            padding: 18px 16px !important;
+          }
+          #tab-view-settings .settings-card-body {
+            padding: 0 !important;
+          }
+          #tab-view-settings .sys-info-row {
+            padding: 12px 14px !important;
+          }
+          #tab-view-settings .sys-info-lbl {
+            font-size: 13px !important;
+          }
+          #tab-view-settings .sys-info-val {
+            font-size: 13px !important;
           }
         }
 
