@@ -69,6 +69,24 @@ class SmartHome3DDashboard extends HTMLElement {
     };
     updateDefaultBadges();
 
+    // 全局悬浮 Toast 通知机制 (专用于主题设置与全局状态)
+    const showToast = (text, icon = "✓", type = "info") => {
+      let toast = this.shadowRoot.getElementById("theme-center-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "theme-center-toast";
+        toast.className = "theme-center-toast";
+        this.shadowRoot.appendChild(toast);
+      }
+      toast.className = "theme-center-toast " + type;
+      toast.innerHTML = `<span style="font-size:16px;">${icon}</span><span>${text}</span>`;
+      toast.classList.add("show");
+      if (this._toastTimer) clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3500);
+    };
+
     const btnSetDef3D = this.shadowRoot.getElementById("btn-set-default-3d");
     if (btnSetDef3D) {
       btnSetDef3D.addEventListener("click", async () => {
@@ -85,14 +103,7 @@ class SmartHome3DDashboard extends HTMLElement {
             });
           }
         } catch(e) {}
-        const rowStatus = this.shadowRoot.getElementById("row-update-status");
-        const valStatus = this.shadowRoot.getElementById("val-update-status");
-        if (rowStatus && valStatus) {
-          rowStatus.style.display = "flex";
-          valStatus.textContent = "已成功设置【3D智能中控】为默认启动主题！下次进入将直接呈现中控。";
-          valStatus.style.color = "#00e5ff";
-          setTimeout(() => { rowStatus.style.display = "none"; }, 4000);
-        }
+        showToast("已设【3D智能中控】为默认主题", "✨", "info");
       });
     }
 
@@ -112,27 +123,22 @@ class SmartHome3DDashboard extends HTMLElement {
             });
           }
         } catch(e) {}
-        const rowStatus = this.shadowRoot.getElementById("row-update-status");
-        const valStatus = this.shadowRoot.getElementById("val-update-status");
-        if (rowStatus && valStatus) {
-          rowStatus.style.display = "flex";
-          valStatus.textContent = "已成功设置【官方原生经典主题】为默认启动主题！下次进入将直接打开原生概览。";
-          valStatus.style.color = "#00e676";
-          setTimeout(() => { rowStatus.style.display = "none"; }, 4000);
-        }
+        showToast("已设【官方原生主题】为默认主题", "🏠", "success");
       });
     }
 
-    // === 检测更新逻辑 (直接请求 GitHub API) ===
+    // === 检测更新逻辑 (仅在用户主动点击按钮时触发并展示更新横幅) ===
     const btnCheckUpd = this.shadowRoot.getElementById("btn-check-theme-update");
     if (btnCheckUpd) {
       btnCheckUpd.addEventListener("click", async () => {
         const rowStatus = this.shadowRoot.getElementById("row-update-status");
         const valStatus = this.shadowRoot.getElementById("val-update-status");
         if (rowStatus && valStatus) {
-          rowStatus.style.display = "flex";
+          rowStatus.classList.add("show");
           valStatus.textContent = "正在连接 GitHub 检测最新 Release...";
           valStatus.style.color = "#00e5ff";
+          btnCheckUpd.disabled = true;
+          btnCheckUpd.style.opacity = "0.6";
           try {
             const resp = await fetch("https://api.github.com/repos/deltrivx/ThemeCenter/releases/latest");
             if (!resp.ok) throw new Error("HTTP " + resp.status);
@@ -141,13 +147,19 @@ class SmartHome3DDashboard extends HTMLElement {
             if (latestVer && latestVer !== THEME_VERSION) {
               valStatus.textContent = "发现新版本 v" + latestVer + " (当前 v" + THEME_VERSION + ")！可前往 GitHub 下载更新";
               valStatus.style.color = "#ffaa33";
+              showToast("发现新版本 v" + latestVer + "！", "🚀", "info");
             } else {
               valStatus.textContent = "已是最新正式版 (v" + THEME_VERSION + ") · 运行状态良好";
               valStatus.style.color = "#00e676";
+              showToast("ThemeCenter 已是最新版", "✓", "success");
             }
           } catch(err) {
             valStatus.textContent = "检测更新失败: " + (err.message || "网络不可达");
             valStatus.style.color = "#ff5252";
+            showToast("检测更新失败，请检查外网连接", "⚠️", "info");
+          } finally {
+            btnCheckUpd.disabled = false;
+            btnCheckUpd.style.opacity = "1";
           }
         }
       });
@@ -4643,20 +4655,7 @@ class SmartHome3DDashboard extends HTMLElement {
           border-color: #00e5ff;
         }
 
-        .sys-update-banner {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(0, 229, 255, 0.08);
-          border: 1px solid rgba(0, 229, 255, 0.25);
-          border-radius: 10px;
-          padding: 10px 14px;
-          margin-top: 8px;
-          margin-bottom: 8px;
-          font-size: 13px;
-          color: #e2e8f0;
-          animation: fadeIn 0.3s ease;
-        }
+        
 
         /* 移动端 (手机/小屏竖屏) 专属排版响应式优化 */
         @media (max-width: 680px) {
@@ -4964,18 +4963,63 @@ class SmartHome3DDashboard extends HTMLElement {
         }
 
         .sys-update-banner {
-          display: flex !important;
+          display: none !important;
           align-items: center !important;
           gap: 12px !important;
           background: rgba(0, 229, 255, 0.08) !important;
           border: 1px solid rgba(0, 229, 255, 0.3) !important;
           border-radius: 12px !important;
           padding: 12px 16px !important;
-          margin-top: 10px !important;
-          margin-bottom: 6px !important;
+          margin: 10px 4px !important;
           font-size: 13px !important;
           color: #e2e8f0 !important;
           box-shadow: 0 4px 16px rgba(0, 229, 255, 0.06) !important;
+        }
+        .sys-update-banner.show {
+          display: flex !important;
+          animation: bannerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        }
+        @keyframes bannerSlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 顶部悬浮 Toast 交互通知 (用于主题切换、默认设置等操作提示) */
+        .theme-center-toast {
+          position: fixed !important;
+          top: 24px !important;
+          left: 50% !important;
+          transform: translateX(-50%) translateY(-20px) scale(0.95) !important;
+          background: rgba(15, 23, 42, 0.92) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border: 1px solid rgba(0, 229, 255, 0.35) !important;
+          border-radius: 30px !important;
+          padding: 10px 22px !important;
+          color: #f8fafc !important;
+          font-size: 13.5px !important;
+          font-weight: 600 !important;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 255, 0.2) !important;
+          z-index: 99999 !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          white-space: nowrap !important;
+        }
+        .theme-center-toast.show {
+          opacity: 1 !important;
+          transform: translateX(-50%) translateY(0) scale(1) !important;
+          pointer-events: auto !important;
+        }
+        .theme-center-toast.success {
+          border-color: rgba(0, 230, 118, 0.45) !important;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 230, 118, 0.2) !important;
+        }
+        .theme-center-toast.info {
+          border-color: rgba(0, 229, 255, 0.45) !important;
         }
 
         /* 移动端与窄屏适配优化 */
@@ -5063,7 +5107,7 @@ class SmartHome3DDashboard extends HTMLElement {
         }
 
         .sys-update-banner {
-          display: flex !important;
+          display: none !important;
           align-items: center !important;
           gap: 12px !important;
           background: rgba(0, 229, 255, 0.08) !important;
@@ -5074,6 +5118,52 @@ class SmartHome3DDashboard extends HTMLElement {
           font-size: 13px !important;
           color: #e2e8f0 !important;
           box-shadow: 0 4px 16px rgba(0, 229, 255, 0.06) !important;
+        }
+        .sys-update-banner.show {
+          display: flex !important;
+          animation: bannerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        }
+        @keyframes bannerSlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 顶部悬浮 Toast 交互通知 (用于主题切换、默认设置等操作提示) */
+        .theme-center-toast {
+          position: fixed !important;
+          top: 24px !important;
+          left: 50% !important;
+          transform: translateX(-50%) translateY(-20px) scale(0.95) !important;
+          background: rgba(15, 23, 42, 0.92) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          border: 1px solid rgba(0, 229, 255, 0.35) !important;
+          border-radius: 30px !important;
+          padding: 10px 22px !important;
+          color: #f8fafc !important;
+          font-size: 13.5px !important;
+          font-weight: 600 !important;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 255, 0.2) !important;
+          z-index: 99999 !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          white-space: nowrap !important;
+        }
+        .theme-center-toast.show {
+          opacity: 1 !important;
+          transform: translateX(-50%) translateY(0) scale(1) !important;
+          pointer-events: auto !important;
+        }
+        .theme-center-toast.success {
+          border-color: rgba(0, 230, 118, 0.45) !important;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 230, 118, 0.2) !important;
+        }
+        .theme-center-toast.info {
+          border-color: rgba(0, 229, 255, 0.45) !important;
         }
 
         @media (max-width: 768px) {
