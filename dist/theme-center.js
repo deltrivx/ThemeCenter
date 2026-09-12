@@ -8263,7 +8263,63 @@ const switchBackToCatalogList = () => {
 
     
     // === 3D 户型图热点直控交互绑定 ===
-    // //     this._stripHAChrome();
+    // //     
+    // === 彻底阻断移动端边缘侧滑呼出原生侧边栏 ===
+    const blockSidebarSwipe = () => {
+      try {
+        const ha = document.querySelector("home-assistant");
+        const main = ha?.shadowRoot?.querySelector("home-assistant-main");
+        const drawer = main?.shadowRoot?.querySelector("ha-drawer");
+        if (drawer) {
+          drawer.open = false;
+          if (drawer.style) {
+            drawer.style.setProperty("--ha-sidebar-width", "0px", "important");
+          }
+          const sidebarShell = drawer.shadowRoot?.querySelector(".sidebar-shell");
+          if (sidebarShell) {
+            sidebarShell.style.setProperty("pointer-events", "none", "important");
+            sidebarShell.style.setProperty("display", "none", "important");
+          }
+        }
+      } catch(e) {}
+    };
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    window.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { capture: true, passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (e.touches && e.touches.length > 0) {
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const deltaX = currentX - touchStartX;
+        const deltaY = Math.abs(currentY - touchStartY);
+
+        // 如果手指从左边缘 (< 70px) 开始向右滑动，且横向位移大于纵向位移，直接捕获并阻断，绝不传递给底层 drawer
+        if (touchStartX < 70 && deltaX > 8 && deltaX > deltaY) {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          blockSidebarSwipe();
+        }
+      }
+    }, { capture: true, passive: false });
+
+    window.addEventListener("hass-toggle-menu", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      blockSidebarSwipe();
+    }, { capture: true });
+
+    blockSidebarSwipe();
+    setInterval(blockSidebarSwipe, 1500);
+
+    this._stripHAChrome();
     if (!this._stripTimer) {
       this._stripTimer = setInterval(() => this._stripHAChrome(), 800);
     }
