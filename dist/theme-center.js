@@ -87,7 +87,7 @@ class SmartHome3DDashboard extends HTMLElement {
       }, 2500);
     };
 
-    // 动态探查并更新 AI 语音管线与 Conversation 模型 (主动双行)
+    // 动态探查并更新 AI 语音管线与 Conversation 模型 (自然双行、完美对齐)
     const updateAIPipelineInfo = () => {
       const elGw = this.shadowRoot.getElementById("sys-info-ai-gateway");
       const elModel = this.shadowRoot.getElementById("sys-info-ai-pipeline");
@@ -106,11 +106,11 @@ class SmartHome3DDashboard extends HTMLElement {
       const hasCF = Object.keys(states).some(k => k.includes("cloudflare_ai_gateway"));
       
       if (elGw) {
-        elGw.textContent = hasCF ? "Cloudflare AI Gateway" : "Home Assistant 本地语音";
+        elGw.textContent = hasCF ? "Cloudflare AI Gateway" : "Home Assistant 语音底座";
       }
       if (elModel) {
         const modelLabel = convName || "GLM-4.7-Flash";
-        elModel.textContent = `${modelLabel} · 实时对话流`;
+        elModel.textContent = modelLabel + " (实时对话)";
       }
     };
     setTimeout(updateAIPipelineInfo, 100);
@@ -5333,53 +5333,6 @@ class SmartHome3DDashboard extends HTMLElement {
         }
 
       
-        /* === AI 语音管线天生主动双行结构 (移动端/桌面端统一防挤压排版) === */
-        .sys-info-ai-row {
-          align-items: flex-start !important;
-        }
-
-        .sys-info-val-dual {
-          display: flex !important;
-          flex-direction: column !important;
-          align-items: flex-end !important;
-          gap: 4px !important;
-          text-align: right !important;
-          min-width: 0 !important;
-          flex: 1 !important;
-        }
-
-        .sys-val-primary {
-          font-size: 13.5px !important;
-          font-weight: 600 !important;
-          color: #f8fafc !important;
-          letter-spacing: 0.2px !important;
-        }
-
-        .sys-val-secondary {
-          font-size: 11.5px !important;
-          font-weight: 500 !important;
-          color: #00e5ff !important;
-          background: rgba(0, 229, 255, 0.1) !important;
-          border: 1px solid rgba(0, 229, 255, 0.25) !important;
-          padding: 2px 8px !important;
-          border-radius: 6px !important;
-          display: inline-block !important;
-          white-space: nowrap !important;
-        }
-
-        @media (max-width: 680px) {
-          .sys-info-ai-row {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-          }
-          .sys-info-val-dual {
-            align-items: flex-start !important;
-            text-align: left !important;
-            width: 100% !important;
-          }
-        }
-
         /* === ThemeEffects 风格独立升级弹窗专属视觉体系 === */
         .modal-dialog.update-dialog {
           max-width: 620px !important;
@@ -5544,6 +5497,58 @@ class SmartHome3DDashboard extends HTMLElement {
         .ota-copy-btn:hover {
           background: rgba(0, 229, 255, 0.25) !important;
           border-color: #00e5ff !important;
+        }
+
+      
+        /* === ThemeCenter 升级弹窗绝对居中 (移动端/桌面端页面正中) === */
+        #theme-update-modal {
+          display: none;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 16px !important;
+          box-sizing: border-box !important;
+        }
+
+        #theme-update-modal.open {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        #theme-update-modal .update-dialog {
+          margin: auto !important;
+          width: 92% !important;
+          max-width: 540px !important;
+          max-height: 85vh !important;
+          transform: translateY(0) !important;
+          animation: modalCenterScale 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        @keyframes modalCenterScale {
+          from { opacity: 0; transform: scale(0.88); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+          #theme-update-modal {
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 14px !important;
+          }
+          #theme-update-modal .update-dialog {
+            width: 94% !important;
+            max-height: 82vh !important;
+          }
+          #theme-update-modal .update-modal-body {
+            padding: 16px !important;
+            gap: 14px !important;
+          }
+          #theme-update-modal .update-compare-grid {
+            gap: 8px !important;
+          }
+          #theme-update-modal .ver-card-num {
+            font-size: 17px !important;
+          }
         }
 
       </style>
@@ -6143,13 +6148,15 @@ class SmartHome3DDashboard extends HTMLElement {
                     <span class="sys-info-lbl">网络通信链路</span>
                     <span class="sys-info-val">[IP] 直连 · WebSocket 零延迟</span>
                   </div>
-                  <div class="sys-info-row sys-info-ai-row">
+                  <div class="sys-info-row">
                     <span class="sys-info-lbl">AI 语音管线</span>
-                    <div class="sys-info-val-dual">
-                      <div class="sys-val-primary" id="sys-info-ai-gateway">Cloudflare AI Gateway</div>
-                      <div class="sys-val-secondary" id="sys-info-ai-pipeline">GLM-4.7-Flash · 流式对话管线</div>
+                    <div class="sys-info-val" style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+                      <span id="sys-info-ai-gateway" style="color: #f1f5f9; font-weight: 600;">Cloudflare AI Gateway</span>
+                      <span id="sys-info-ai-pipeline" style="color: #00e5ff; font-size: 12px; font-weight: 500;">GLM-4.7-Flash · 实时流</span>
                     </div>
                   </div>
+                </div>
+              </div>
                 </div>
               </div>
 
