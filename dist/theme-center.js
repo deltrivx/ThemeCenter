@@ -264,14 +264,17 @@ class SmartHome3DDashboard extends HTMLElement {
 
           if (releaseBodyEl) {
             let bodyContent = data.body || "本次发布包含多项稳定性与体验优化。";
-            // 纯前端展示清洗：去除代码包裹的双引号、转义双引号和 markdown 代码块语法，使弹窗视觉纯净整洁
+            // 彻底清洗：去除 Markdown 代码块、转义引号、单引号包围、双引号包围与首尾引号字符
             bodyContent = bodyContent
               .replace(/```[a-z]*\n?/gi, "")
               .replace(/```/g, "")
               .replace(/\\"/g, '"')
-              .replace(/^"+|"+$/g, "")
-              .replace(/\r\n/g, "\n");
-            releaseBodyEl.textContent = bodyContent.trim();
+              .replace(/\\'/g, "'")
+              .replace(/\r\n/g, "\n")
+              .trim();
+            // 去除最外层可能存在的引号包裹 (包括连续的单引号、双引号、反引号)
+            bodyContent = bodyContent.replace(/^['"`]+|['"`]+$/g, "").trim();
+            releaseBodyEl.textContent = bodyContent;
           }
         } catch(err) {
           if (latestVerEl) latestVerEl.textContent = "连接失败";
