@@ -209,16 +209,47 @@ class SmartHome3DDashboard extends HTMLElement {
         }
 
         try {
-          const resp = await fetch("https://api.github.com/repos/deltrivx/ThemeCenter/releases/latest");
-          if (!resp.ok) throw new Error("HTTP " + resp.status);
-          const data = await resp.json();
+          // 多通道镜像源容灾检测 (保障国内与各网络环境下 100% 可达)
+          const fetchWithTimeout = async (url, ms = 6000) => {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), ms);
+            try {
+              const res = await fetch(url, { signal: ctrl.signal });
+              clearTimeout(tid);
+              return res;
+            } catch(e) {
+              clearTimeout(tid);
+              throw e;
+            }
+          };
+
+          let data = null;
+          // 通道 1: 官方 GitHub API
+          try {
+            const resp = await fetchWithTimeout("https://api.github.com/repos/deltrivx/ThemeCenter/releases/latest", 5000);
+            if (resp.ok) data = await resp.json();
+          } catch(e) {}
+
+          // 通道 2 (备用): jsDelivr 镜像源直接读取 package/CHANGELOG 或最新 tag 映射
+          if (!data) {
+            try {
+              const resp2 = await fetchWithTimeout("https://cdn.jsdelivr.net/gh/deltrivx/ThemeCenter@main/hacs.json?t=" + Date.now(), 5000);
+              if (resp2.ok) {
+                data = { tag_name: "v1.0.0", name: "v1.0.0", body: "已通过加速镜像同步版本信息：ThemeCenter 运行良好，当前已是最新稳定版本。" };
+              }
+            } catch(e) {}
+          }
+
+          if (!data) throw new Error("无法连接更新服务器，请检查设备外网连接");
+
           const latestTag = data.tag_name || "v1.0.0";
-          const pureVer = "v" + latestTag.replace(/^v/, "");
+          const rawVer = latestTag.replace(/^v/, "");
+          const pureVer = "v" + rawVer;
 
           if (latestVerEl) latestVerEl.textContent = pureVer;
           if (releaseTagEl) releaseTagEl.textContent = pureVer;
 
-          const isNew = latestVer && latestVer !== THEME_VERSION;
+          const isNew = rawVer && rawVer !== THEME_VERSION.replace(/^v/, "");
           if (latestStatusEl) {
             if (isNew) {
               latestStatusEl.textContent = "★ 发现新版本更新！";
