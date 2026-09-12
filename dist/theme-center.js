@@ -263,8 +263,15 @@ class SmartHome3DDashboard extends HTMLElement {
           }
 
           if (releaseBodyEl) {
-            const bodyContent = data.body || "本次发布包含多项稳定性与体验优化。";
-            releaseBodyEl.textContent = bodyContent;
+            let bodyContent = data.body || "本次发布包含多项稳定性与体验优化。";
+            // 纯前端展示清洗：去除代码包裹的双引号、转义双引号和 markdown 代码块语法，使弹窗视觉纯净整洁
+            bodyContent = bodyContent
+              .replace(/```[a-z]*\n?/gi, "")
+              .replace(/```/g, "")
+              .replace(/\\"/g, '"')
+              .replace(/^"+|"+$/g, "")
+              .replace(/\r\n/g, "\n");
+            releaseBodyEl.textContent = bodyContent.trim();
           }
         } catch(err) {
           if (latestVerEl) latestVerEl.textContent = "连接失败";
