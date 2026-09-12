@@ -4,7 +4,7 @@
  * 显示在「系统设置 → 系统底座与连接」卡片中。
  * ============================================================ */
 const THEME_NAME = "ThemeCenter";
-const THEME_VERSION = "1.0.0";
+const THEME_VERSION = "1.0.1";
 
 class SmartHome3DDashboard extends HTMLElement {
   constructor() {
@@ -6230,7 +6230,6 @@ class SmartHome3DDashboard extends HTMLElement {
                   <div class="modal-sub-text">官方固件与主题更新 · 语义化版本校验与发布日志</div>
                 </div>
               </div>
-              <button class="modal-close-btn" id="btn-close-update-modal" type="button" title="关闭窗口">✕</button>
             </div>
 
             <div class="modal-body update-modal-body">
