@@ -213,10 +213,10 @@ class SmartHome3DDashboard extends HTMLElement {
           if (!resp.ok) throw new Error("HTTP " + resp.status);
           const data = await resp.json();
           const latestTag = data.tag_name || "v1.0.0";
-          const latestVer = latestTag.replace(/^v/, "");
+          const pureVer = "v" + latestTag.replace(/^v/, "");
 
-          if (latestVerEl) latestVerEl.textContent = latestTag;
-          if (releaseTagEl) releaseTagEl.textContent = data.name || latestTag;
+          if (latestVerEl) latestVerEl.textContent = pureVer;
+          if (releaseTagEl) releaseTagEl.textContent = pureVer;
 
           const isNew = latestVer && latestVer !== THEME_VERSION;
           if (latestStatusEl) {
@@ -5444,11 +5444,16 @@ class SmartHome3DDashboard extends HTMLElement {
         .notes-card-body {
           padding: 14px 16px !important;
           font-size: 13px !important;
-          line-height: 1.6 !important;
+          line-height: 1.65 !important;
           color: #cbd5e1 !important;
-          max-height: 160px !important;
+          max-height: 180px !important;
           overflow-y: auto !important;
+          overflow-x: hidden !important;
           white-space: pre-wrap !important;
+          word-break: break-word !important;
+          overflow-wrap: anywhere !important;
+          box-sizing: border-box !important;
+          width: 100% !important;
         }
 
         .update-ota-box {
@@ -6139,7 +6144,7 @@ class SmartHome3DDashboard extends HTMLElement {
                   <div class="sys-info-row update-version-row">
                     <span class="sys-info-lbl">主题套件版本</span>
                     <div class="sys-version-box">
-                      <span class="sys-info-val theme-ver-val" id="sys-info-theme-version">ThemeCenter v1.0.0</span>
+                      <span class="sys-info-val theme-ver-val" id="sys-info-theme-version">v1.0.0</span>
                       <button class="theme-mini-btn" id="btn-check-theme-update" type="button" title="点击检查 GitHub 最新版本">🔄 检测更新</button>
                     </div>
                   </div>
