@@ -87,15 +87,15 @@ class SmartHome3DDashboard extends HTMLElement {
       }, 2500);
     };
 
-    // 动态探查并更新 AI 语音管线与 Conversation 模型
+    // 动态探查并更新 AI 语音管线与 Conversation 模型 (主动双行)
     const updateAIPipelineInfo = () => {
-      const el = this.shadowRoot.getElementById("sys-info-ai-pipeline");
-      if (!el || !this._hass) return;
+      const elGw = this.shadowRoot.getElementById("sys-info-ai-gateway");
+      const elModel = this.shadowRoot.getElementById("sys-info-ai-pipeline");
+      if (!this._hass) return;
       
       const states = this._hass.states || {};
       let convName = "";
       
-      // 1. 优先从 conversation.* 状态中探测
       for (const [eid, s] of Object.entries(states)) {
         if (eid.startsWith("conversation.")) {
           convName = s.attributes?.friendly_name || eid.replace("conversation.", "").toUpperCase();
@@ -103,13 +103,14 @@ class SmartHome3DDashboard extends HTMLElement {
         }
       }
       
-      // 2. 检测是否具备 Cloudflare AI Gateway
       const hasCF = Object.keys(states).some(k => k.includes("cloudflare_ai_gateway"));
       
-      if (convName) {
-        el.textContent = hasCF ? `Cloudflare Gateway (${convName})` : convName;
-      } else {
-        el.textContent = hasCF ? "Cloudflare AI Gateway (GLM-4.7-Flash)" : "Home Assistant 本地管线";
+      if (elGw) {
+        elGw.textContent = hasCF ? "Cloudflare AI Gateway" : "Home Assistant 本地语音";
+      }
+      if (elModel) {
+        const modelLabel = convName || "GLM-4.7-Flash";
+        elModel.textContent = `${modelLabel} · 实时对话流`;
       }
     };
     setTimeout(updateAIPipelineInfo, 100);
@@ -155,39 +156,93 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
-    // === 检测更新逻辑 (仅在用户主动点击按钮时触发并展示更新横幅) ===
+    // === ThemeEffects 风格版本管理与升级模态弹窗事件绑定 ===
+    const updateModal = this.shadowRoot.getElementById("theme-update-modal");
+    const btnCloseUpdate = this.shadowRoot.getElementById("btn-close-update-modal");
+    const btnDoneUpdate = this.shadowRoot.getElementById("btn-update-modal-done");
+    const btnCopyOta = this.shadowRoot.getElementById("btn-copy-ota-cmd");
+
+    const closeUpdateModal = () => {
+      if (updateModal) updateModal.classList.remove("open");
+    };
+    if (btnCloseUpdate) btnCloseUpdate.addEventListener("click", closeUpdateModal);
+    if (btnDoneUpdate) btnDoneUpdate.addEventListener("click", closeUpdateModal);
+    if (updateModal) {
+      updateModal.addEventListener("click", (e) => {
+        if (e.target === updateModal) closeUpdateModal();
+      });
+    }
+
+    if (btnCopyOta) {
+      btnCopyOta.addEventListener("click", () => {
+        const cmdText = this.shadowRoot.getElementById("modal-ota-command")?.textContent || "";
+        navigator.clipboard.writeText(cmdText).then(() => {
+          showToast("已复制一键 OTA 命令到剪贴板", "📋", "success");
+        }).catch(() => {
+          showToast("请手动长按选中复制命令", "ℹ️", "info");
+        });
+      });
+    }
+
     const btnCheckUpd = this.shadowRoot.getElementById("btn-check-theme-update");
     if (btnCheckUpd) {
       btnCheckUpd.addEventListener("click", async () => {
-        const rowStatus = this.shadowRoot.getElementById("row-update-status");
-        const valStatus = this.shadowRoot.getElementById("val-update-status");
-        if (rowStatus && valStatus) {
-          rowStatus.classList.add("show");
-          valStatus.textContent = "正在连接 GitHub 检测最新 Release...";
-          valStatus.style.color = "#00e5ff";
-          btnCheckUpd.disabled = true;
-          btnCheckUpd.style.opacity = "0.6";
-          try {
-            const resp = await fetch("https://api.github.com/repos/deltrivx/ThemeCenter/releases/latest");
-            if (!resp.ok) throw new Error("HTTP " + resp.status);
-            const data = await resp.json();
-            const latestVer = (data.tag_name || "").replace(/^v/, "");
-            if (latestVer && latestVer !== THEME_VERSION) {
-              valStatus.textContent = "发现新版本 v" + latestVer + " (当前 v" + THEME_VERSION + ")！可前往 GitHub 下载更新";
-              valStatus.style.color = "#ffaa33";
-              showToast("发现新版本 v" + latestVer + "！", "🚀", "info");
+        if (!updateModal) return;
+        
+        // 1. 打开弹窗，进入加载状态
+        updateModal.classList.add("open");
+        const curVerEl = this.shadowRoot.getElementById("modal-cur-version");
+        const latestVerEl = this.shadowRoot.getElementById("modal-latest-version");
+        const latestStatusEl = this.shadowRoot.getElementById("modal-latest-status");
+        const releaseBodyEl = this.shadowRoot.getElementById("modal-release-body");
+        const releaseTagEl = this.shadowRoot.getElementById("modal-release-tag");
+        const latestCard = this.shadowRoot.getElementById("modal-latest-card");
+
+        if (curVerEl) curVerEl.textContent = "v" + THEME_VERSION;
+        if (latestVerEl) latestVerEl.textContent = "正在检测...";
+        if (latestStatusEl) {
+          latestStatusEl.textContent = "连接 GitHub API...";
+          latestStatusEl.style.color = "#00e5ff";
+        }
+        if (releaseBodyEl) {
+          releaseBodyEl.innerHTML = '<div class="notes-loading-shimmer">正在获取最新版本发布日志与构建产物清单...</div>';
+        }
+
+        try {
+          const resp = await fetch("https://api.github.com/repos/deltrivx/ThemeCenter/releases/latest");
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          const data = await resp.json();
+          const latestTag = data.tag_name || "v1.0.0";
+          const latestVer = latestTag.replace(/^v/, "");
+
+          if (latestVerEl) latestVerEl.textContent = latestTag;
+          if (releaseTagEl) releaseTagEl.textContent = data.name || latestTag;
+
+          const isNew = latestVer && latestVer !== THEME_VERSION;
+          if (latestStatusEl) {
+            if (isNew) {
+              latestStatusEl.textContent = "★ 发现新版本更新！";
+              latestStatusEl.style.color = "#ffaa33";
+              if (latestCard) latestCard.style.borderColor = "#ffaa33";
             } else {
-              valStatus.textContent = "已是最新正式版 (v" + THEME_VERSION + ") · 运行状态良好";
-              valStatus.style.color = "#00e676";
-              showToast("ThemeCenter 已是最新版", "✓", "success");
+              latestStatusEl.textContent = "● 已是最新正式版";
+              latestStatusEl.style.color = "#00e676";
+              if (latestCard) latestCard.style.borderColor = "rgba(0, 229, 255, 0.4)";
             }
-          } catch(err) {
-            valStatus.textContent = "检测更新失败: " + (err.message || "网络不可达");
-            valStatus.style.color = "#ff5252";
-            showToast("检测更新失败，请检查外网连接", "⚠️", "info");
-          } finally {
-            btnCheckUpd.disabled = false;
-            btnCheckUpd.style.opacity = "1";
+          }
+
+          if (releaseBodyEl) {
+            const bodyContent = data.body || "本次发布包含多项稳定性与体验优化。";
+            releaseBodyEl.textContent = bodyContent;
+          }
+        } catch(err) {
+          if (latestVerEl) latestVerEl.textContent = "连接失败";
+          if (latestStatusEl) {
+            latestStatusEl.textContent = "外网或 API 超时";
+            latestStatusEl.style.color = "#ff5252";
+          }
+          if (releaseBodyEl) {
+            releaseBodyEl.textContent = "检测更新失败：" + (err.message || "无法访问 GitHub API") + "\n可通过上方提供的 OTA 命令直接在终端执行更新。";
           }
         }
       });
@@ -5277,6 +5332,220 @@ class SmartHome3DDashboard extends HTMLElement {
           }
         }
 
+      
+        /* === AI 语音管线天生主动双行结构 (移动端/桌面端统一防挤压排版) === */
+        .sys-info-ai-row {
+          align-items: flex-start !important;
+        }
+
+        .sys-info-val-dual {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: flex-end !important;
+          gap: 4px !important;
+          text-align: right !important;
+          min-width: 0 !important;
+          flex: 1 !important;
+        }
+
+        .sys-val-primary {
+          font-size: 13.5px !important;
+          font-weight: 600 !important;
+          color: #f8fafc !important;
+          letter-spacing: 0.2px !important;
+        }
+
+        .sys-val-secondary {
+          font-size: 11.5px !important;
+          font-weight: 500 !important;
+          color: #00e5ff !important;
+          background: rgba(0, 229, 255, 0.1) !important;
+          border: 1px solid rgba(0, 229, 255, 0.25) !important;
+          padding: 2px 8px !important;
+          border-radius: 6px !important;
+          display: inline-block !important;
+          white-space: nowrap !important;
+        }
+
+        @media (max-width: 680px) {
+          .sys-info-ai-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .sys-info-val-dual {
+            align-items: flex-start !important;
+            text-align: left !important;
+            width: 100% !important;
+          }
+        }
+
+        /* === ThemeEffects 风格独立升级弹窗专属视觉体系 === */
+        .modal-dialog.update-dialog {
+          max-width: 620px !important;
+          background: linear-gradient(145deg, rgba(18, 24, 38, 0.98) 0%, rgba(10, 14, 22, 0.99) 100%) !important;
+          border: 1px solid rgba(0, 229, 255, 0.35) !important;
+          box-shadow: 0 28px 65px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 229, 255, 0.15) !important;
+          border-radius: 20px !important;
+        }
+
+        .update-icon-glow {
+          background: rgba(0, 229, 255, 0.15) !important;
+          color: #00e5ff !important;
+          box-shadow: 0 0 20px rgba(0, 229, 255, 0.3) !important;
+        }
+
+        .update-modal-body {
+          padding: 20px 24px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 18px !important;
+          overflow-y: auto !important;
+          max-height: 65vh !important;
+        }
+
+        .update-compare-grid {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 14px !important;
+        }
+
+        .update-ver-card {
+          flex: 1 !important;
+          background: rgba(255, 255, 255, 0.03) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-radius: 14px !important;
+          padding: 16px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 6px !important;
+          box-sizing: border-box !important;
+        }
+
+        .update-ver-card.current {
+          border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        .update-ver-card.latest {
+          border-color: rgba(0, 229, 255, 0.4) !important;
+          background: rgba(0, 229, 255, 0.05) !important;
+        }
+
+        .ver-card-tag {
+          font-size: 11.5px !important;
+          color: #94a3b8 !important;
+          font-weight: 500 !important;
+        }
+
+        .ver-card-num {
+          font-size: 20px !important;
+          font-weight: 700 !important;
+          color: #f8fafc !important;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+        }
+
+        .ver-card-status {
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          color: #00e676 !important;
+        }
+
+        .update-ver-arrow {
+          font-size: 20px !important;
+          color: #64748b !important;
+          flex-shrink: 0 !important;
+        }
+
+        .update-notes-card {
+          background: rgba(0, 0, 0, 0.3) !important;
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          border-radius: 12px !important;
+          overflow: hidden !important;
+        }
+
+        .notes-card-head {
+          padding: 10px 16px !important;
+          background: rgba(255, 255, 255, 0.03) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+        }
+
+        .notes-head-title {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #e2e8f0 !important;
+        }
+
+        .notes-head-tag {
+          font-size: 11px !important;
+          background: rgba(0, 229, 255, 0.15) !important;
+          color: #00e5ff !important;
+          padding: 2px 8px !important;
+          border-radius: 10px !important;
+          font-weight: 600 !important;
+        }
+
+        .notes-card-body {
+          padding: 14px 16px !important;
+          font-size: 13px !important;
+          line-height: 1.6 !important;
+          color: #cbd5e1 !important;
+          max-height: 160px !important;
+          overflow-y: auto !important;
+          white-space: pre-wrap !important;
+        }
+
+        .update-ota-box {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 8px !important;
+        }
+
+        .ota-box-title {
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          color: #94a3b8 !important;
+        }
+
+        .ota-cmd-code {
+          background: rgba(0, 0, 0, 0.45) !important;
+          border: 1px solid rgba(0, 229, 255, 0.2) !important;
+          border-radius: 10px !important;
+          padding: 10px 14px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 10px !important;
+        }
+
+        .ota-cmd-code code {
+          font-size: 12px !important;
+          color: #00e5ff !important;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+          overflow-x: auto !important;
+          white-space: nowrap !important;
+        }
+
+        .ota-copy-btn {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          color: #fff !important;
+          border-radius: 6px !important;
+          padding: 4px 10px !important;
+          font-size: 12px !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+          flex-shrink: 0 !important;
+        }
+
+        .ota-copy-btn:hover {
+          background: rgba(0, 229, 255, 0.25) !important;
+          border-color: #00e5ff !important;
+        }
+
       </style>
 
       <div class="main-shell">
@@ -5869,17 +6138,17 @@ class SmartHome3DDashboard extends HTMLElement {
                       <button class="theme-mini-btn" id="btn-check-theme-update" type="button" title="点击检查 GitHub 最新版本">🔄 检测更新</button>
                     </div>
                   </div>
-                  <div class="sys-update-banner" id="row-update-status" style="display: none;">
-                    <div class="update-banner-icon">ℹ️</div>
-                    <div class="update-banner-text" id="val-update-status">正在检查最新版本...</div>
                   </div>
                   <div class="sys-info-row">
                     <span class="sys-info-lbl">网络通信链路</span>
                     <span class="sys-info-val">[IP] 直连 · WebSocket 零延迟</span>
                   </div>
-                  <div class="sys-info-row">
+                  <div class="sys-info-row sys-info-ai-row">
                     <span class="sys-info-lbl">AI 语音管线</span>
-                    <span class="sys-info-val" id="sys-info-ai-pipeline">检测中...</span>
+                    <div class="sys-info-val-dual">
+                      <div class="sys-val-primary" id="sys-info-ai-gateway">Cloudflare AI Gateway</div>
+                      <div class="sys-val-secondary" id="sys-info-ai-pipeline">GLM-4.7-Flash · 流式对话管线</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5896,6 +6165,65 @@ class SmartHome3DDashboard extends HTMLElement {
         
         
         
+        
+        <!-- MODAL DIALOG: THEME UPDATE & VERSION MANAGEMENT (参考 ThemeEffects 工业级版本管理规范) -->
+        <div class="modal-overlay" id="theme-update-modal">
+          <div class="modal-dialog update-dialog">
+            <div class="modal-header">
+              <div class="modal-title-wrap">
+                <div class="modal-icon update-icon-glow">🚀</div>
+                <div>
+                  <div class="modal-title-text">ThemeCenter 版本管理</div>
+                  <div class="modal-sub-text">官方固件与主题更新 · 语义化版本校验与发布日志</div>
+                </div>
+              </div>
+              <button class="modal-close-btn" id="btn-close-update-modal" type="button" title="关闭窗口">✕</button>
+            </div>
+
+            <div class="modal-body update-modal-body">
+              <!-- 版本状态看板 -->
+              <div class="update-compare-grid">
+                <div class="update-ver-card current">
+                  <div class="ver-card-tag">当前安装版本</div>
+                  <div class="ver-card-num" id="modal-cur-version">v1.0.0</div>
+                  <div class="ver-card-status">● 正在运行</div>
+                </div>
+                <div class="update-ver-arrow">➜</div>
+                <div class="update-ver-card latest" id="modal-latest-card">
+                  <div class="ver-card-tag">GitHub 最新版本</div>
+                  <div class="ver-card-num" id="modal-latest-version">检测中...</div>
+                  <div class="ver-card-status" id="modal-latest-status">正在连接 Release API</div>
+                </div>
+              </div>
+
+              <!-- 更新详情与 Release Notes 卡片 -->
+              <div class="update-notes-card">
+                <div class="notes-card-head">
+                  <span class="notes-head-title">📋 版本发布说明</span>
+                  <span class="notes-head-tag" id="modal-release-tag">Official Release</span>
+                </div>
+                <div class="notes-card-body" id="modal-release-body">
+                  <div class="notes-loading-shimmer">正在获取最新版本发布日志与构建产物清单...</div>
+                </div>
+              </div>
+
+              <!-- OTA 安装命令区 -->
+              <div class="update-ota-box">
+                <div class="ota-box-title">一键 OTA 升级终端命令</div>
+                <div class="ota-cmd-code">
+                  <code id="modal-ota-command">curl -fsSL https://raw.githubusercontent.com/deltrivx/ThemeCenter/main/scripts/install.sh | bash</code>
+                  <button class="ota-copy-btn" id="btn-copy-ota-cmd" type="button">📋 复制</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer-bar">
+              <a href="https://github.com/deltrivx/ThemeCenter/releases" target="_blank" rel="noopener noreferrer" class="cfg-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">📦 前往 GitHub Releases</a>
+              <button class="cfg-btn" id="btn-update-modal-done" type="button">关闭</button>
+            </div>
+          </div>
+        </div>
+
         <!-- MODAL DIALOG: NATIVE-PARITY INTEGRATIONS & DEVICES CONFIGURATION CENTER -->
                 <!-- THEMED LUXURY DEVICE DETAIL MODAL (彻底统一黑曜石新版主题风格) -->
         <div class="modal-overlay" id="device-detail-modal">
