@@ -173,18 +173,81 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
-    // === 点击右侧 GitHub 版本方格安全触发更新提示或直接跳转 Release ===
+    // === 点击右侧版本方格：在 Home Assistant 容器内直接执行静默更新并自动重启 ===
     if (latestCard) {
-      latestCard.addEventListener("click", () => {
-        const latestVerEl = this.shadowRoot.getElementById("modal-latest-version");
-        const targetVer = latestVerEl?.textContent || "最新版本";
+      latestCard.addEventListener("click", async () => {
+        if (latestCard.getAttribute("data-updating") === "true") return;
+        latestCard.setAttribute("data-updating", "true");
+        
         const latestStatusEl = this.shadowRoot.getElementById("modal-latest-status");
         const clickHintEl = this.shadowRoot.getElementById("modal-click-hint");
+        const releaseBodyEl = this.shadowRoot.getElementById("modal-release-body");
 
-        // 打开 GitHub Release 页面或一键跳转下载
-        window.open(`https://github.com/deltrivx/ThemeCenter/releases/tag/${targetVer}`, "_blank");
-        showToast(`已为您前往 GitHub 下载 ${targetVer}`, "🚀", "info");
-        if (clickHintEl) clickHintEl.textContent = "✔ 已打开下载页面";
+        if (clickHintEl) clickHintEl.textContent = "⏳ 正在执行容器内静默更新...";
+        if (latestStatusEl) {
+          latestStatusEl.textContent = "正在下载最新版本...";
+          latestStatusEl.style.color = "#ffb300";
+        }
+        if (releaseBodyEl) {
+          releaseBodyEl.innerHTML = "<div style="padding:24px; text-align:center; color:#00e5ff;">🚀 正在通过 Home Assistant 核心服务下载最新发布包并覆盖部署...<br/><br/><div class="notes-loading-shimmer">部署完成后将自动重启 Home Assistant 服务</div></div>";
+        }
+
+        const getHass = () => {
+          if (this._hass) return this._hass;
+          const ha = document.querySelector("home-assistant");
+          return ha ? ha.hass : null;
+        };
+
+        const hass = getHass();
+        if (!hass) {
+          showToast("未检测到 Home Assistant 核心服务对象，请刷新重试", "❌", "error");
+          latestCard.removeAttribute("data-updating");
+          return;
+        }
+
+        try {
+          showToast("正在执行容器内版本热更新...", "🚀", "info");
+          // 步骤 1: 调用 shell_command.update_theme_center
+          await hass.callService("shell_command", "update_theme_center");
+          
+          if (clickHintEl) clickHintEl.textContent = "✔ 文件已更新，正在重启...";
+          if (latestStatusEl) {
+            latestStatusEl.textContent = "更新成功 · 重启中";
+            latestStatusEl.style.color = "#00e676";
+          }
+          if (releaseBodyEl) {
+            releaseBodyEl.innerHTML = "<div style="padding:24px; text-align:center; color:#00e676;">✅ 主题文件已成功更新至最新发布版本！<br/><br/>已发出系统重启指令，15 秒后自动刷新页面...</div>";
+          }
+          showToast("更新完成，正在重启 Home Assistant...", "🔄", "success");
+
+          // 步骤 2: 调用 homeassistant.restart
+          try {
+            await hass.callService("homeassistant", "restart");
+          } catch (e) {
+            console.warn("Restart call finished/disconnected:", e);
+          }
+
+          // 步骤 3: 倒计时并刷新
+          let remain = 15;
+          const timer = setInterval(() => {
+            remain--;
+            if (clickHintEl) clickHintEl.textContent = `⏳ 重启中 (${remain}s)...`;
+            if (remain <= 0) {
+              clearInterval(timer);
+              window.location.reload();
+            }
+          }, 1000);
+
+        } catch (err) {
+          console.error("ThemeCenter update failed:", err);
+          showToast("更新失败: " + (err.message || err), "❌", "error");
+          if (clickHintEl) clickHintEl.textContent = "❌ 更新异常，点击重试";
+          if (latestStatusEl) {
+            latestStatusEl.textContent = "更新失败";
+            latestStatusEl.style.color = "#ff5252";
+          }
+          latestCard.removeAttribute("data-updating");
+        }
       });
     }
 
@@ -293,29 +356,28 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
-    const btnSwitchNative = this.shadowRoot.getElementById("btn-trigger-switch-native");
+        const btnSwitchNative = this.shadowRoot.getElementById("btn-trigger-switch-native");
     if (btnSwitchNative) {
-              btnSwitchNative.addEventListener("click", async () => {
-          btnSwitchNative.textContent = "正在切换...";
-          try {
-            localStorage.setItem("ha_preferred_theme", "native");
-            localStorage.setItem("default_dashboard", "home");
-          } catch(e) {}
-          // 关键：通过前端 WebSocket 或直接修改把当前用户的 default_panel 改为 home
-          try {
-            const ha = document.querySelector("home-assistant");
-            if (ha && ha.hass && ha.hass.callWS) {
-              await ha.hass.callWS({
-                type: "frontend/set_user_data",
-                key: "default_panel",
-                value: "home"
-              });
-            }
-          } catch(e) {}
-          setTimeout(() => {
-            window.location.href = "/home/overview";
-          }, 250);
-        });
+      btnSwitchNative.addEventListener("click", async () => {
+        btnSwitchNative.textContent = "正在切换...";
+        try {
+          localStorage.setItem("theme_center_default_theme", "native");
+          localStorage.setItem("defaultPanel", JSON.stringify("lovelace"));
+        } catch(e) {}
+        try {
+          const ha = document.querySelector("home-assistant");
+          if (ha && ha.hass && ha.hass.callWS) {
+            await ha.hass.callWS({
+              type: "frontend/set_user_data",
+              key: "core",
+              value: { default_panel: "home" }
+            });
+          }
+        } catch(e) {}
+        setTimeout(() => {
+          window.location.href = "/lovelace";
+        }, 150);
+      });
     }
 
     const btnOpenInt = this.shadowRoot.getElementById("btn-open-integrations-from-settings");
@@ -6229,7 +6291,6 @@ class SmartHome3DDashboard extends HTMLElement {
                       <button class="theme-mini-btn" id="btn-check-theme-update" type="button" title="点击检查 GitHub 最新版本">🔄 检测更新</button>
                     </div>
                   </div>
-                  </div>
                   <div class="sys-info-row">
                     <span class="sys-info-lbl">网络通信链路</span>
                     <span class="sys-info-val">[IP] 直连 · WebSocket 零延迟</span>
@@ -6243,11 +6304,28 @@ class SmartHome3DDashboard extends HTMLElement {
                   </div>
                 </div>
               </div>
-                </div>
-              </div>
 
               <!-- 3. 生态管理与原生后台设置扩展入口 -->
-              
+              <div class="settings-card">
+                <div class="settings-card-head">
+                  <div class="settings-head-left">
+                    <div class="settings-icon-wrap" style="color: #ab47bc; background: rgba(171, 71, 188, 0.15);">📦</div>
+                    <div>
+                      <div class="settings-card-title">生态集成与设备注册</div>
+                      <div class="settings-card-desc">全屋智能硬件生态 · 快速访问原生配置与高级集成管理</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="settings-card-body">
+                  <div class="settings-action-banner" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                    <div>
+                      <div style="font-size:14px; font-weight:600; color:#f8fafc;">硬件与集成中枢</div>
+                      <div style="font-size:12px; color:#94a3b8; margin-top:2px;">管理 12 个集成服务与 20 台物理设备</div>
+                    </div>
+                    <button class="theme-action-btn primary" id="btn-open-integrations-from-settings" type="button" style="padding:6px 14px; font-size:12px;">打开配置中心</button>
+                  </div>
+                </div>
+              </div>
 
             </div>
           </div>
@@ -6298,8 +6376,6 @@ class SmartHome3DDashboard extends HTMLElement {
                 <div class="notes-card-body" id="modal-release-body">
                   <div class="notes-loading-shimmer">正在获取最新版本发布日志与构建产物清单...</div>
                 </div>
-              </div>
-
               </div>
             </div>
 
