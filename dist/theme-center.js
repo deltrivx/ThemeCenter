@@ -189,7 +189,7 @@ class SmartHome3DDashboard extends HTMLElement {
           latestStatusEl.style.color = "#ffb300";
         }
         if (releaseBodyEl) {
-          releaseBodyEl.innerHTML = "<div style="padding:24px; text-align:center; color:#00e5ff;">🚀 正在通过 Home Assistant 核心服务下载最新发布包并覆盖部署...<br/><br/><div class="notes-loading-shimmer">部署完成后将自动重启 Home Assistant 服务</div></div>";
+          releaseBodyEl.innerHTML = `<div style="padding:24px; text-align:center; color:#00e5ff;">🚀 正在通过 Home Assistant 核心服务下载最新发布包并覆盖部署...<br/><br/><div class="notes-loading-shimmer">部署完成后将自动重启 Home Assistant 服务</div></div>`;
         }
 
         const getHass = () => {
@@ -216,7 +216,7 @@ class SmartHome3DDashboard extends HTMLElement {
             latestStatusEl.style.color = "#00e676";
           }
           if (releaseBodyEl) {
-            releaseBodyEl.innerHTML = "<div style="padding:24px; text-align:center; color:#00e676;">✅ 主题文件已成功更新至最新发布版本！<br/><br/>已发出系统重启指令，15 秒后自动刷新页面...</div>";
+            releaseBodyEl.innerHTML = `<div style="padding:24px; text-align:center; color:#00e676;">✅ 主题文件已成功更新至最新发布版本！<br/><br/>已发出系统重启指令，15 秒后自动刷新页面...</div>`;
           }
           showToast("更新完成，正在重启 Home Assistant...", "🔄", "success");
 
