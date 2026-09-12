@@ -176,6 +176,11 @@ class SmartHome3DDashboard extends HTMLElement {
     // === 点击右侧版本方格：在 Home Assistant 容器内直接执行静默更新并自动重启 ===
     if (latestCard) {
       latestCard.addEventListener("click", async () => {
+        const curLatestStatus = this.shadowRoot.getElementById("modal-latest-status")?.textContent || "";
+        if (curLatestStatus.includes("已是最新")) {
+          showToast("当前主题套件已是最新稳定版本，无需更新", "✔", "info");
+          return;
+        }
         if (latestCard.getAttribute("data-updating") === "true") return;
         latestCard.setAttribute("data-updating", "true");
         
@@ -319,15 +324,32 @@ class SmartHome3DDashboard extends HTMLElement {
           if (releaseTagEl) releaseTagEl.textContent = pureVer;
 
           const isNew = rawVer && rawVer !== THEME_VERSION.replace(/^v/, "");
+          const clickHintEl = this.shadowRoot.getElementById("modal-click-hint");
           if (latestStatusEl) {
             if (isNew) {
               latestStatusEl.textContent = "★ 发现新版本更新！";
               latestStatusEl.style.color = "#ffaa33";
-              if (latestCard) latestCard.style.borderColor = "#ffaa33";
+              if (latestCard) {
+                latestCard.style.borderColor = "#ffaa33";
+                latestCard.style.cursor = "pointer";
+              }
+              if (clickHintEl) {
+                clickHintEl.textContent = "⚡ 点击立即在线更新";
+                clickHintEl.style.color = "#00e5ff";
+                clickHintEl.style.display = "block";
+              }
             } else {
               latestStatusEl.textContent = "● 已是最新正式版";
               latestStatusEl.style.color = "#00e676";
-              if (latestCard) latestCard.style.borderColor = "rgba(0, 229, 255, 0.4)";
+              if (latestCard) {
+                latestCard.style.borderColor = "rgba(0, 229, 255, 0.4)";
+                latestCard.style.cursor = "default";
+              }
+              if (clickHintEl) {
+                clickHintEl.textContent = "✔ 当前已是最新版本";
+                clickHintEl.style.color = "#00e676";
+                clickHintEl.style.display = "block";
+              }
             }
           }
 
@@ -6331,7 +6353,7 @@ class SmartHome3DDashboard extends HTMLElement {
                         </div>
                       </div>
                     </div>
-                    <button class="theme-action-btn primary" id="btn-open-integrations-from-settings" type="button" style="flex-shrink:0; padding:8px 14px; font-size:12px; white-space:nowrap;">打开配置中心</button>
+                    <button class="theme-action-btn primary" id="btn-open-integrations-from-settings" type="button" style="padding:6px 12px; font-size:12px;">打开配置中心</button>
                   </div>
                 </div>
               </div>
@@ -7370,8 +7392,8 @@ class SmartHome3DDashboard extends HTMLElement {
                 <!-- 顶层集成服务列表容器 -->
                 <div id="add-catalog-list-view">
                   <div class="view-tab-heading">
-                    <span class="heading-title">内置支持的所有硬件协议与集成服务</span>
-                    <span class="heading-count" style="color: #00e5ff; background: rgba(0,229,255,0.12); padding: 2px 10px; border-radius: 20px; font-weight: 600; border: 1px solid rgba(0,229,255,0.25);">就地配置 · 18+ 内置支持</span>
+                    <span class="heading-title">支持的所有官方与第三方集成服务</span>
+                    <span class="heading-count" id="add-catalog-total-count" style="color: #94a3b8; font-size: 12px;">正在加载官方集成清单...</span>
                   </div>
                   <div class="add-catalog-grid">
                     <div class="catalog-card act-add-brand" data-brand="Xiaomi Miot" data-icon="🟠" data-domain="xiaomi_miot" data-type="局域网 / 账号直连" data-hint="IP / Token / 米家账号">
@@ -8063,7 +8085,67 @@ class SmartHome3DDashboard extends HTMLElement {
     let currentConfigDomain = "";
     let currentConfigBrand = "";
 
-    const switchBackToCatalogList = () => {
+    
+    // === 动态从原生主题与 HA 核心加载并平铺显示所有官方支持的集成列表 ===
+    const loadFullNativeIntegrations = async () => {
+      const grid = this.shadowRoot.querySelector(".add-catalog-grid");
+      const countEl = this.shadowRoot.getElementById("add-catalog-total-count");
+      if (!grid || grid.getAttribute("data-full-loaded") === "true") return;
+
+      try {
+        const resp = await fetch("/local/ha_integrations_catalog.json?v=" + Date.now());
+        if (!resp.ok) return;
+        const allList = await resp.json();
+        if (!Array.isArray(allList) || allList.length === 0) return;
+
+        grid.setAttribute("data-full-loaded", "true");
+        if (countEl) countEl.textContent = `共支持 ${allList.length} 个官方原生与主流服务`;
+
+        // 生成全量卡片
+        const cardsHtml = allList.map(item => {
+          const domain = item.domain || "custom";
+          const name = item.name || domain;
+          const iot = item.iot_class ? `(${item.iot_class})` : "";
+          return `
+            <div class="catalog-card act-add-brand" data-brand="${name}" data-domain="${domain}" data-type="官方原生配置流" data-hint="引导接入">
+              <div class="catalog-top">
+                <span style="font-size: 24px;">🧩</span>
+                <button class="cfg-btn" type="button">+ 添加服务</button>
+              </div>
+              <div class="catalog-name">${name}</div>
+              <div class="catalog-desc">Domain: ${domain} ${iot} · 点击启动该集成原生配置向导。</div>
+            </div>
+          `;
+        }).join("");
+
+        grid.innerHTML = cardsHtml;
+
+        // 重新绑定全量卡片点击事件
+        grid.querySelectorAll(".act-add-brand").forEach(card => {
+          card.addEventListener("click", () => {
+            const domain = card.dataset.domain;
+            const brand = card.dataset.brand;
+            showToast(`正在唤起 ${brand} 原生配置流...`, "⚙️", "info");
+            setTimeout(() => {
+              window.location.href = `/config/integrations/dashboard/add?domain=${domain}`;
+            }, 300);
+          });
+        });
+      } catch (err) {
+        console.warn("Load native catalog error:", err);
+      }
+    };
+
+    // 在切换到添加集成 Tab 时调用
+    this.shadowRoot.querySelectorAll(".modal-tab-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        if (pill.dataset.mview === "add") {
+          loadFullNativeIntegrations();
+        }
+      });
+    });
+
+const switchBackToCatalogList = () => {
       if (catalogFormView) catalogFormView.style.display = "none";
       if (catalogListView) catalogListView.style.display = "block";
     };
