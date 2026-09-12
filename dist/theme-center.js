@@ -251,6 +251,8 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
+        const themeVerEl = this.shadowRoot.getElementById("sys-info-theme-version");
+    if (themeVerEl) themeVerEl.textContent = "v" + THEME_VERSION;
     const btnCheckUpd = this.shadowRoot.getElementById("btn-check-theme-update");
     if (btnCheckUpd) {
       btnCheckUpd.addEventListener("click", async () => {
@@ -6287,7 +6289,7 @@ class SmartHome3DDashboard extends HTMLElement {
                   <div class="sys-info-row update-version-row">
                     <span class="sys-info-lbl">主题套件版本</span>
                     <div class="sys-version-box">
-                      <span class="sys-info-val theme-ver-val" id="sys-info-theme-version">v1.0.0</span>
+                      <span class="sys-info-val theme-ver-val" id="sys-info-theme-version">v${THEME_VERSION}</span>
                       <button class="theme-mini-btn" id="btn-check-theme-update" type="button" title="点击检查 GitHub 最新版本">🔄 检测更新</button>
                     </div>
                   </div>
@@ -6317,12 +6319,19 @@ class SmartHome3DDashboard extends HTMLElement {
                   </div>
                 </div>
                 <div class="settings-card-body">
-                  <div class="settings-action-banner" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
-                    <div>
-                      <div style="font-size:14px; font-weight:600; color:#f8fafc;">硬件与集成中枢</div>
-                      <div style="font-size:12px; color:#94a3b8; margin-top:2px;">管理 12 个集成服务与 20 台物理设备</div>
+                  <div class="settings-action-banner" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-size:14px; font-weight:600; color:#f8fafc; line-height:1.3;">硬件与集成中枢</div>
+                      <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
+                        <div style="font-size:11px; color:#38bdf8; display:inline-flex; align-items:center; gap:5px; line-height:1.2;">
+                          <span style="font-size:12px;">🧩</span><span>管理 12 个已配置集成服务</span>
+                        </div>
+                        <div style="font-size:11px; color:#a78bfa; display:inline-flex; align-items:center; gap:5px; line-height:1.2;">
+                          <span style="font-size:12px;">📱</span><span>已纳管 20 台物理硬件设备</span>
+                        </div>
+                      </div>
                     </div>
-                    <button class="theme-action-btn primary" id="btn-open-integrations-from-settings" type="button" style="padding:6px 14px; font-size:12px;">打开配置中心</button>
+                    <button class="theme-action-btn primary" id="btn-open-integrations-from-settings" type="button" style="flex-shrink:0; padding:8px 14px; font-size:12px; white-space:nowrap;">打开配置中心</button>
                   </div>
                 </div>
               </div>
@@ -7356,47 +7365,74 @@ class SmartHome3DDashboard extends HTMLElement {
                 </div>
               </div>
 
-              <!-- VIEW 5: ADD INTEGRATION CATALOG -->
+              <!-- VIEW 5: ADD INTEGRATION CATALOG (ALIGNED WITH NATIVE HA) -->
               <div class="m-view-tab" id="m-tab-add">
                 <div class="view-tab-heading">
-                  <span class="heading-title">添加新品牌集成或通讯协议</span>
-                  <span class="heading-count" style="color: #00bcd4;">局域网自动发现</span>
+                  <span class="heading-title">添加新品牌集成与原生服务</span>
+                  <span class="heading-count" style="color: #00e5ff; background: rgba(0,229,255,0.12); padding: 2px 10px; border-radius: 20px; font-weight: 600; border: 1px solid rgba(0,229,255,0.25);">内置支持的服务</span>
                 </div>
                 <div class="add-catalog-grid">
-                  <div class="catalog-card act-add-brand" data-brand="小米米家 (Xiaomi Miot)">
+                  <div class="catalog-card act-add-brand" data-brand="小米米家 (Xiaomi Miot)" data-domain="xiaomi_miot">
                     <div class="catalog-top">
                       <span style="font-size: 26px;">🟠</span>
-                      <button class="cfg-btn" type="button">+ 设置</button>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
                     </div>
                     <div class="catalog-name">Xiaomi Miot</div>
-                    <div class="catalog-desc">支持扫描添加小米账号设备、Mi Home 局域网 Token 设备及网关。</div>
+                    <div class="catalog-desc">官方推荐：全自动接入小米账号、米家本地 Token 设备与多模网关。</div>
                   </div>
 
-                  <div class="catalog-card act-add-brand" data-brand="Yeelight 智能照明">
-                    <div class="catalog-top">
-                      <span style="font-size: 26px;">💡</span>
-                      <button class="cfg-btn" type="button">+ 设置</button>
-                    </div>
-                    <div class="catalog-name">Yeelight</div>
-                    <div class="catalog-desc">局域网自动探测 Yeelight 智能灯带、吸顶灯、台灯与氛围灯。</div>
-                  </div>
-
-                  <div class="catalog-card act-add-brand" data-brand="MQTT 协议">
+                  <div class="catalog-card act-add-brand" data-brand="MQTT 协议与服务" data-domain="mqtt">
                     <div class="catalog-top">
                       <span style="font-size: 26px;">📡</span>
-                      <button class="cfg-btn" type="button">+ 设置</button>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
                     </div>
                     <div class="catalog-name">MQTT Broker</div>
-                    <div class="catalog-desc">配置连接 Mosquitto 或第三方服务端，自动发现 Zigbee2MQTT 实体。</div>
+                    <div class="catalog-desc">内置通讯底座：连接 Mosquitto 或第三方代理，自动对接 Zigbee2MQTT。</div>
                   </div>
 
-                  <div class="catalog-card act-add-brand" data-brand="通用网络摄像头">
+                  <div class="catalog-card act-add-brand" data-brand="Yeelight 智能照明" data-domain="yeelight">
+                    <div class="catalog-top">
+                      <span style="font-size: 26px;">💡</span>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
+                    </div>
+                    <div class="catalog-name">Yeelight</div>
+                    <div class="catalog-desc">官方内置驱动：直连 Yeelight 吸顶灯、灯带、台灯与氛围矩阵。</div>
+                  </div>
+
+                  <div class="catalog-card act-add-brand" data-brand="通用网络监控摄像头" data-domain="generic">
                     <div class="catalog-top">
                       <span style="font-size: 26px;">📷</span>
-                      <button class="cfg-btn" type="button">+ 设置</button>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
                     </div>
                     <div class="catalog-name">Generic Camera</div>
-                    <div class="catalog-desc">配置 RTSP / HLS 实时监控视频流并在 3D 户型中查看。</div>
+                    <div class="catalog-desc">官方媒体驱动：支持接入 RTSP / ONVIF / HLS 监控并在 3D 空间实时预览。</div>
+                  </div>
+
+                  <div class="catalog-card act-add-brand" data-brand="Apple HomeKit" data-domain="homekit_controller">
+                    <div class="catalog-top">
+                      <span style="font-size: 26px;">🍎</span>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
+                    </div>
+                    <div class="catalog-name">HomeKit Controller</div>
+                    <div class="catalog-desc">官方生态接入：局域网免网关桥接兼容 HomeKit 的配件并本地控制。</div>
+                  </div>
+
+                  <div class="catalog-card act-add-brand" data-brand="Matter / Thread" data-domain="matter">
+                    <div class="catalog-top">
+                      <span style="font-size: 26px;">⚡</span>
+                      <button class="cfg-btn" type="button">+ 添加服务</button>
+                    </div>
+                    <div class="catalog-name">Matter</div>
+                    <div class="catalog-desc">下一代万物互联协议：支持配网并本地秒控新一代 Matter 跨生态设备。</div>
+                  </div>
+
+                  <div class="catalog-card act-add-brand" data-brand="官方原生集成库" data-domain="native_more">
+                    <div class="catalog-top">
+                      <span style="font-size: 26px;">🧩</span>
+                      <button class="cfg-btn" type="button" style="background:#00e5ff; color:#0f172a; font-weight:700;">浏览全部</button>
+                    </div>
+                    <div class="catalog-name">官方内置全部集成</div>
+                    <div class="catalog-desc">直接打开 Home Assistant 官方原生集成仓库，搜索并添加 2000+ 原生服务。</div>
                   </div>
                 </div>
               </div>
@@ -7858,8 +7894,19 @@ class SmartHome3DDashboard extends HTMLElement {
     this.shadowRoot.querySelectorAll(".act-add-brand").forEach(card => {
       card.addEventListener("click", () => {
         const brand = card.dataset.brand || "新集成";
-        showToast(`🔍 正在局域网全网探测 ${brand}...`);
-        setTimeout(() => showToast(`✔ 探测向导已就绪：发现兼容设备！`), 1500);
+        const domain = card.dataset.domain || "";
+        if (domain === "native_more") {
+          showToast("正在打开 Home Assistant 官方原生集成中心...", "🧩", "info");
+          setTimeout(() => {
+            window.location.href = "/config/integrations/dashboard/add";
+          }, 400);
+          return;
+        }
+        showToast(`正在启动官方服务配置向导: ${brand}...`, "⚙️", "info");
+        setTimeout(() => {
+          // 直接唤起原生配置流或引导页
+          window.location.href = domain ? `/config/integrations/dashboard/add?domain=${domain}` : "/config/integrations/dashboard/add";
+        }, 500);
       });
     });
 
