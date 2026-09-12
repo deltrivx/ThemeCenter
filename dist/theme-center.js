@@ -173,48 +173,18 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
-    // === 点击右侧 GitHub 版本方格直接触发在线自动更新 ===
+    // === 点击右侧 GitHub 版本方格安全触发更新提示或直接跳转 Release ===
     if (latestCard) {
-      latestCard.addEventListener("click", async () => {
-        const latestStatusEl = this.shadowRoot.getElementById("modal-latest-status");
-        const clickHintEl = this.shadowRoot.getElementById("modal-click-hint");
+      latestCard.addEventListener("click", () => {
         const latestVerEl = this.shadowRoot.getElementById("modal-latest-version");
         const targetVer = latestVerEl?.textContent || "最新版本";
+        const latestStatusEl = this.shadowRoot.getElementById("modal-latest-status");
+        const clickHintEl = this.shadowRoot.getElementById("modal-click-hint");
 
-        if (latestCard.classList.contains("upgrading")) return;
-
-        latestCard.classList.add("upgrading");
-        if (latestStatusEl) {
-          latestStatusEl.textContent = "⏳ 正在拉取固件产物并部署...";
-          latestStatusEl.style.color = "#ffaa33";
-        }
-        if (clickHintEl) clickHintEl.textContent = "🔄 正在安装更新...";
-        showToast(`正在更新至 ${targetVer}，请稍候...`, "⚡", "info");
-
-        try {
-          // 调用 Home Assistant 原生 shell_command 服务执行实时更新
-          if (this._hass && this._hass.callService) {
-            await this._hass.callService("shell_command", "update_theme_center");
-          }
-          if (latestStatusEl) {
-            latestStatusEl.textContent = "✅ 更新完成！即将刷新生效";
-            latestStatusEl.style.color = "#00e676";
-          }
-          if (clickHintEl) clickHintEl.textContent = "✔ 更新成功";
-          showToast(`恭喜！ThemeCenter 已更新完成，正在重载`, "🎉", "success");
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } catch(err) {
-          console.error("Online update error:", err);
-          if (latestStatusEl) {
-            latestStatusEl.textContent = "❌ 更新失败: " + (err.message || "服务调用受限");
-            latestStatusEl.style.color = "#ff5252";
-          }
-          if (clickHintEl) clickHintEl.textContent = "⚡ 点击重新尝试";
-          showToast("更新执行受限，请确认配置", "⚠️", "info");
-          latestCard.classList.remove("upgrading");
-        }
+        // 打开 GitHub Release 页面或一键跳转下载
+        window.open(`https://github.com/deltrivx/ThemeCenter/releases/tag/${targetVer}`, "_blank");
+        showToast(`已为您前往 GitHub 下载 ${targetVer}`, "🚀", "info");
+        if (clickHintEl) clickHintEl.textContent = "✔ 已打开下载页面";
       });
     }
 
