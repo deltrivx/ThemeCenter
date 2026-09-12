@@ -160,7 +160,7 @@ class SmartHome3DDashboard extends HTMLElement {
     const updateModal = this.shadowRoot.getElementById("theme-update-modal");
     const btnCloseUpdate = this.shadowRoot.getElementById("btn-close-update-modal");
     const btnDoneUpdate = this.shadowRoot.getElementById("btn-update-modal-done");
-    const btnCopyOta = this.shadowRoot.getElementById("btn-copy-ota-cmd");
+    const latestCard = this.shadowRoot.getElementById("modal-latest-card");
 
     const closeUpdateModal = () => {
       if (updateModal) updateModal.classList.remove("open");
@@ -173,14 +173,48 @@ class SmartHome3DDashboard extends HTMLElement {
       });
     }
 
-    if (btnCopyOta) {
-      btnCopyOta.addEventListener("click", () => {
-        const cmdText = this.shadowRoot.getElementById("modal-ota-command")?.textContent || "";
-        navigator.clipboard.writeText(cmdText).then(() => {
-          showToast("已复制一键 OTA 命令到剪贴板", "📋", "success");
-        }).catch(() => {
-          showToast("请手动长按选中复制命令", "ℹ️", "info");
-        });
+    // === 点击右侧 GitHub 版本方格直接触发在线自动更新 ===
+    if (latestCard) {
+      latestCard.addEventListener("click", async () => {
+        const latestStatusEl = this.shadowRoot.getElementById("modal-latest-status");
+        const clickHintEl = this.shadowRoot.getElementById("modal-click-hint");
+        const latestVerEl = this.shadowRoot.getElementById("modal-latest-version");
+        const targetVer = latestVerEl?.textContent || "最新版本";
+
+        if (latestCard.classList.contains("upgrading")) return;
+
+        latestCard.classList.add("upgrading");
+        if (latestStatusEl) {
+          latestStatusEl.textContent = "⏳ 正在拉取固件产物并部署...";
+          latestStatusEl.style.color = "#ffaa33";
+        }
+        if (clickHintEl) clickHintEl.textContent = "🔄 正在安装更新...";
+        showToast(`正在更新至 ${targetVer}，请稍候...`, "⚡", "info");
+
+        try {
+          // 调用 Home Assistant 原生 shell_command 服务执行实时更新
+          if (this._hass && this._hass.callService) {
+            await this._hass.callService("shell_command", "update_theme_center");
+          }
+          if (latestStatusEl) {
+            latestStatusEl.textContent = "✅ 更新完成！即将刷新生效";
+            latestStatusEl.style.color = "#00e676";
+          }
+          if (clickHintEl) clickHintEl.textContent = "✔ 更新成功";
+          showToast(`恭喜！ThemeCenter 已更新完成，正在重载`, "🎉", "success");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } catch(err) {
+          console.error("Online update error:", err);
+          if (latestStatusEl) {
+            latestStatusEl.textContent = "❌ 更新失败: " + (err.message || "服务调用受限");
+            latestStatusEl.style.color = "#ff5252";
+          }
+          if (clickHintEl) clickHintEl.textContent = "⚡ 点击重新尝试";
+          showToast("更新执行受限，请确认配置", "⚠️", "info");
+          latestCard.classList.remove("upgrading");
+        }
       });
     }
 
@@ -5424,6 +5458,42 @@ class SmartHome3DDashboard extends HTMLElement {
         .update-ver-card.latest {
           border-color: rgba(0, 229, 255, 0.4) !important;
           background: rgba(0, 229, 255, 0.05) !important;
+          cursor: pointer !important;
+          position: relative !important;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .update-ver-card.latest:hover {
+          background: rgba(0, 229, 255, 0.12) !important;
+          border-color: #00e5ff !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 24px rgba(0, 229, 255, 0.25) !important;
+        }
+
+        .update-ver-card.latest:active {
+          transform: scale(0.97) !important;
+        }
+
+        .update-ver-card.latest.upgrading {
+          pointer-events: none !important;
+          border-color: #ffaa33 !important;
+          background: rgba(255, 170, 51, 0.1) !important;
+          animation: pulseUpgrade 1.2s infinite alternate !important;
+        }
+
+        @keyframes pulseUpgrade {
+          0% { box-shadow: 0 0 10px rgba(255, 170, 51, 0.2); }
+          100% { box-shadow: 0 0 25px rgba(255, 170, 51, 0.5); }
+        }
+
+        .ver-card-click-hint {
+          font-size: 11px !important;
+          color: #00e5ff !important;
+          font-weight: 600 !important;
+          margin-top: 2px !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 4px !important;
         }
 
         .ver-card-tag {
@@ -6241,10 +6311,11 @@ class SmartHome3DDashboard extends HTMLElement {
                   <div class="ver-card-status">● 正在运行</div>
                 </div>
                 <div class="update-ver-arrow">➜</div>
-                <div class="update-ver-card latest" id="modal-latest-card">
+                <div class="update-ver-card latest" id="modal-latest-card" title="点击立即直接更新到此版本">
                   <div class="ver-card-tag">GitHub 最新版本</div>
                   <div class="ver-card-num" id="modal-latest-version">检测中...</div>
                   <div class="ver-card-status" id="modal-latest-status">正在连接 Release API</div>
+                  <div class="ver-card-click-hint" id="modal-click-hint">⚡ 点击立即更新</div>
                 </div>
               </div>
 
@@ -6259,13 +6330,6 @@ class SmartHome3DDashboard extends HTMLElement {
                 </div>
               </div>
 
-              <!-- OTA 安装命令区 -->
-              <div class="update-ota-box">
-                <div class="ota-box-title">一键 OTA 升级终端命令</div>
-                <div class="ota-cmd-code">
-                  <code id="modal-ota-command">curl -fsSL https://raw.githubusercontent.com/deltrivx/ThemeCenter/main/scripts/install.sh | bash</code>
-                  <button class="ota-copy-btn" id="btn-copy-ota-cmd" type="button">📋 复制</button>
-                </div>
               </div>
             </div>
 
